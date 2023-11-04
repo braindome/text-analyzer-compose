@@ -5,6 +5,7 @@ Frontend for my Text Analyzer Serverless API
 - AWS: Lambda, API Gateway, Serverless
 - Retrofit (testing GET and POST)
 - Jetpack Compose
+- Coroutines
 - Gson Converter
 - Okhttp Logging Interceptor
 
