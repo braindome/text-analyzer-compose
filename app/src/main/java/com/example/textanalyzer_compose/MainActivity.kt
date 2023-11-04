@@ -85,6 +85,7 @@ fun AppContent() {
     val api = retrofit.create(TextAnalyzerApi::class.java)
     val inputState = remember { mutableStateOf(TextFieldValue(""))}
     val outputState = remember { mutableStateOf("")}
+    val wordCountState = remember { mutableStateOf(0)}
 
 
     Column(
@@ -138,10 +139,21 @@ fun AppContent() {
                     Text("word list")
                 }
                 Button(
-                    onClick = { /*TODO*/ },
+                    onClick = {
+                          scope.launch {
+                              getSummary(
+                                  api,
+                                  inputState.value.text,
+                                  outputState,
+                                  wordCountState
+                              )
+
+                          }
+                    },
+
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("word count")
+                    Text("summary")
                 }
 
             }
@@ -151,20 +163,33 @@ fun AppContent() {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Button(
-                    onClick = { /*TODO*/ },
+                    onClick = {
+                        scope.launch {
+                            getWordCount(
+                                api,
+                                inputState.value.text,
+                                outputState,
+                                wordCountState)
+                    } },
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("summary")
+                    Text("count")
                 }
                 Button(
-                    onClick = { /*TODO*/ },
+                    onClick = {
+                        scope.launch {
+                            getStats(
+                                api,
+                                inputState.value.text,
+                                outputState
+                            )
+
+                    } },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("stats")
                 }
             }
-
-
 
         }
 
@@ -184,7 +209,6 @@ fun AppContent() {
 }
 
 suspend fun getWordList(api: TextAnalyzerApi, inputStateText: String, outputState: MutableState<String>) {
-
     try {
         val response = withContext(Dispatchers.IO) {
             api.getWordList(Input(inputStateText))
@@ -208,8 +232,87 @@ suspend fun getWordList(api: TextAnalyzerApi, inputStateText: String, outputStat
         // Handle potential exceptions
         Log.d("xxx", "Error: ${e.message}")
     }
+}
 
+suspend fun getStats(api: TextAnalyzerApi, inputStateText: String, outputState: MutableState<String>) {
+    try {
+        val response = withContext(Dispatchers.IO) {
+            api.getStats(Input(inputStateText))
+        }
 
+        if (response.isSuccessful) {
+            val statsResponse = response.body()
+            if (statsResponse != null) {
+                withContext(Dispatchers.Main) {
+                    outputState.value = statsResponse.stats.joinToString(", ")
+                }
+            } else {
+                // Handle null response
+                Log.d("xxx", "Null response body")
+            }
+        } else {
+            // Handle non-successful response (e.g., 404, 500, etc.)
+            Log.d("xxx", "Non-successful response: ${response.code()}")
+        }
+    } catch (e: Exception) {
+        // Handle potential exceptions
+        Log.d("xxx", "Error: ${e.message}")
+    }
+}
+
+suspend fun getWordCount(api: TextAnalyzerApi, inputStateText: String, outputState: MutableState<String>, wordCountState: MutableState<Int>) {
+    try {
+        val response = withContext(Dispatchers.IO) {
+            api.getWordCount(Input(inputStateText))
+        }
+
+        if (response.isSuccessful) {
+            val wordCountResponse = response.body()
+            if (wordCountResponse != null) {
+                withContext(Dispatchers.Main) {
+                    wordCountState.value = wordCountResponse.wordCount
+                    outputState.value = wordCountState.value.toString()
+                }
+            } else {
+                // Handle null response
+                Log.d("xxx", "Null response body")
+            }
+        } else {
+            // Handle non-successful response (e.g., 404, 500, etc.)
+            Log.d("xxx", "Non-successful response: ${response.code()}")
+        }
+    } catch (e: Exception) {
+        // Handle potential exceptions
+        Log.d("xxx", "Error: ${e.message}")
+    }
+}
+
+suspend fun getSummary(api: TextAnalyzerApi, inputStateText: String, outputState: MutableState<String>, wordCountState: MutableState<Int>) {
+    try {
+        val response = withContext(Dispatchers.IO) {
+            api.getSummary(Input(inputStateText))
+        }
+
+        if (response.isSuccessful) {
+            val summaryResponse = response.body()
+            if (summaryResponse != null) {
+                withContext(Dispatchers.Main) {
+                    wordCountState.value = summaryResponse.wordCount
+                    val wordListString = summaryResponse.wordList.joinToString(", ")
+                    outputState.value = "Word Count: " + wordCountState.value.toString() + "Word List: " + wordListString
+                }
+            } else {
+                // Handle null response
+                Log.d("xxx", "Null response body")
+            }
+        } else {
+            // Handle non-successful response (e.g., 404, 500, etc.)
+            Log.d("xxx", "Non-successful response: ${response.code()}")
+        }
+    } catch (e: Exception) {
+        // Handle potential exceptions
+        Log.d("xxx", "Error: ${e.message}")
+    }
 }
 
 @Composable
@@ -224,25 +327,9 @@ fun AppPreview() {
 }
 
 
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
 @Preview(showBackground = true)
 @Composable
 fun AppContentPreview() {
     AppContent()
 }
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    TextAnalyzercomposeTheme {
-        Greeting("Android")
-    }
-}
